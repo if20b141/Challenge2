@@ -4,28 +4,56 @@ import torch.nn.functional as F
 
 
 class AudioMLP(nn.Module):
-    def __init__(self, n_steps, n_mels, hidden1_size, hidden2_size, output_size, time_reduce=1, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, n_mels, output_size, time_reduce=1):
+        super().__init__()
         self.time_reduce = time_reduce
-        # optimized for GPU, faster than x.reshape(*x.shape[:-1], -1, 2).mean(-1)
-        self.pool = nn.AvgPool1d(kernel_size=time_reduce, stride=time_reduce)  # Non-overlapping averaging
+        self.pool = nn.AvgPool1d(kernel_size=time_reduce, stride=time_reduce) if time_reduce > 1 else nn.Identity()
 
-        self.fc1 = nn.Linear(n_steps * n_mels, hidden1_size)
-        self.fc2 = nn.Linear(hidden1_size, hidden2_size)
-        self.fc3 = nn.Linear(hidden2_size, output_size)
-        self.dropout = nn.Dropout(0.3)
+        # Convolutional feature extractor
+        self.conv_block1 = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),  # (B, 1, n_mels, time)
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2))  # Halbiert Frequenz und Zeit
+        )
+        self.conv_block2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2))
+        )
+        self.conv_block3 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2))
+        )
+
+        # Adaptive pooling for arbitrary input length
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+
+        # Fully connected classification head
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64, 128),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, output_size)
+        )
 
     def forward(self, x):
-        # reduce time dimension
-        shape = x.shape
-        x = x.reshape(-1, 1, x.shape[-1])
-        x = self.pool(x)  # (4096, 1, 431//n)
-        x = x.reshape(shape[0], shape[1], shape[2], -1)
+        # x shape: (B, 1, n_mels, time)
+        if self.time_reduce > 1:
+            # reduce time dimension
+            b, c, h, w = x.shape
+            x = x.view(b * c * h, 1, w)
+            x = self.pool(x)
+            new_w = x.shape[-1]
+            x = x.view(b, c, h, new_w)
 
-        # 2D to 1D
-        x = nn.Flatten()(x)
-        x = F.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.conv_block1(x)
+        x = self.conv_block2(x)
+        x = self.conv_block3(x)
+        x = self.global_pool(x)
+        x = self.fc(x)
         return x
