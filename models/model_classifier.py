@@ -33,16 +33,17 @@ class AudioMLP(nn.Module):
         self.dropout = nn.Dropout(0.3)
 
     def forward(self, x):
-        shape = x.shape
-        x = x.reshape(-1, 1, x.shape[-1])
-        x = self.pool(x)
-        x = x.reshape(shape[0], shape[1], shape[2], -1)
-
-        # Input shape: (B, Channels=1, Mel, Time)
-        x = x.unsqueeze(1)  # Add channel dim -> (B, 1, Mel, Time)
-        x = self.cnn(x)
-        x = x.view(x.size(0), -1)  # Flatten
-
+        # Erwartet Eingabe x mit Shape: (B, n_mels, n_steps)
+        x = self.pool(x)  # Zeitreduktion: Pooling über letzte Dimension (steps) → (B, n_mels, reduced_steps)
+        x = x.unsqueeze(1)  # Füge Kanal-Dimension hinzu: (B, 1, n_mels, reduced_steps)
+    
+        # CNN
+        x = self.cnn(x)  # → (B, 128, 1, 1) durch AdaptiveAvgPool2d
+    
+        # Flatten
+        x = x.view(x.size(0), -1)  # → (B, 128)
+    
+        # Fully connected layers
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
         x = F.relu(self.fc2(x))
