@@ -26,13 +26,19 @@ class AudioMLP(nn.Module):
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))                # → (B, 128, 1, 1)
+            nn.MaxPool2d(kernel_size=2),                # → (B, 128, n_mels//8, time//8)
+
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d((1, 1))                # → (B, 256, 1, 1)
         )
 
-        self.fc1 = nn.Linear(128, hidden1_size)
+        # MLP-Architektur für Klassifikation
+        self.fc1 = nn.Linear(256, hidden1_size)
         self.fc2 = nn.Linear(hidden1_size, hidden2_size)
         self.fc3 = nn.Linear(hidden2_size, output_size)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.5)  # Erhöhte Dropout-Rate
 
     def forward(self, x):
         # x erwartet (B, n_mels, n_steps) oder (B, 1, n_mels, n_steps)
@@ -42,11 +48,11 @@ class AudioMLP(nn.Module):
             raise ValueError(f"Expected input of shape (B, n_mels, n_steps) or (B, 1, n_mels, n_steps), but got {x.shape}")
 
         x = self.pool(x)      # Zeitreduktion → (B, 1, n_mels, reduced_steps)
-        x = self.cnn(x)       # CNN → (B, 128, 1, 1)
-        x = x.view(x.size(0), -1)  # Flatten → (B, 128)
+        x = self.cnn(x)       # CNN → (B, 256, 1, 1)
+        x = x.view(x.size(0), -1)  # Flatten → (B, 256)
 
         x = F.relu(self.fc1(x))
-        x = self.dropout(x)
+        x = self.dropout(x)  # Dropout anwenden
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
