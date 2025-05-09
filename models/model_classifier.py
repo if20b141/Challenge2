@@ -8,25 +8,25 @@ class AudioMLP(nn.Module):
         super().__init__(*args, **kwargs)
         self.time_reduce = time_reduce
 
-        # Zeitreduktion mit AvgPool2d (nur über Zeitachse)
+        # Zeitreduktion mit AvgPool2d über die Zeitachse
         self.pool = nn.AvgPool2d(kernel_size=(1, time_reduce), stride=(1, time_reduce))
 
-        # CNN zur Merkmalextraktion
+        # CNN für Feature Extraction
         self.cnn = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),  # (B, 1, n_mels, time)
+            nn.Conv2d(1, 32, kernel_size=3, padding=1),  # Input: (B, 1, n_mels, time)
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),                # (B, 32, n_mels//2, time//2)
+            nn.MaxPool2d(kernel_size=2),                # → (B, 32, n_mels//2, time//2)
 
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),                # (B, 64, n_mels//4, time//4)
+            nn.MaxPool2d(kernel_size=2),                # → (B, 64, n_mels//4, time//4)
 
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))                # Global pooling → (B, 128, 1, 1)
+            nn.AdaptiveAvgPool2d((1, 1))                # → (B, 128, 1, 1)
         )
 
         self.fc1 = nn.Linear(128, hidden1_size)
@@ -35,11 +35,14 @@ class AudioMLP(nn.Module):
         self.dropout = nn.Dropout(0.3)
 
     def forward(self, x):
-        # Erwartet Eingabe x mit Shape: (B, n_mels, n_steps)
-        x = x.unsqueeze(1)  # Füge Kanal-Dimension hinzu → (B, 1, n_mels, n_steps)
-        x = self.pool(x)    # Reduktion über die Zeitachse → (B, 1, n_mels, reduced_steps)
+        # x erwartet (B, n_mels, n_steps) oder (B, 1, n_mels, n_steps)
+        if x.dim() == 3:
+            x = x.unsqueeze(1)  # → (B, 1, n_mels, n_steps)
+        elif x.dim() != 4:
+            raise ValueError(f"Expected input of shape (B, n_mels, n_steps) or (B, 1, n_mels, n_steps), but got {x.shape}")
 
-        x = self.cnn(x)     # → (B, 128, 1, 1)
+        x = self.pool(x)      # Zeitreduktion → (B, 1, n_mels, reduced_steps)
+        x = self.cnn(x)       # CNN → (B, 128, 1, 1)
         x = x.view(x.size(0), -1)  # Flatten → (B, 128)
 
         x = F.relu(self.fc1(x))
