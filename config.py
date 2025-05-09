@@ -42,11 +42,11 @@ epochs = 200
 #epochs = 1
 # early stopping after epochs with no improvement
 patience = 20
-lr = 1e-3
+lr = 1e-4
 weight_decay = 1e-3
 warm_epochs = 10
 gamma = 0.8
-step_size = 5
+step_size = 10
 
 # ### TESTING
 # model checkpoints loaded for testing
