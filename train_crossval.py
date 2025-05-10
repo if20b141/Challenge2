@@ -127,10 +127,24 @@ def fit_classifier():
 
 # build model from configuration.
 def make_model():
-    n = config.n_classes
+    """
+    Baut ein neues Modell basierend auf der Konfiguration.
+    Lädt KEINE alten Gewichte, um Architekturinkompatibilität zu vermeiden.
+    """
+    print("Initialisiere neues Modell mit neuer Architektur...")
+
+    # Beispiel: AudioMLP(n_steps=431, n_mels=128, hidden1_size=512, ...)
     model_constructor = config.model_constructor
-    print(model_constructor)
+    print("Modellkonstruktor-String:", model_constructor)
+
+    # Neues Modell aus String erzeugen
     model = eval(model_constructor)
+
+    # Auf Gerät verschieben, falls gewünscht
+    if hasattr(config, "device"):
+        model = model.to(config.device)
+
+    print("Neues Modell erfolgreich erstellt.")
     return model
 
 
