@@ -49,7 +49,8 @@ step_size = 10
 
 # ### TESTING
 # model checkpoints loaded for testing
-test_checkpoints = ['terminal.pt']  # ['terminal.pt', 'best_val_loss.pt']
+# test_checkpoints = ['terminal.pt'] # audiomlp
+test_checkpoints = ['esc50cnn_weights.pt']  # ['terminal.pt', 'best_val_loss.pt']
 # experiment folder used for testing (result from cross validation training)
 #test_experiment = 'results/2025-04-07-00-00'
 test_experiment = 'results/sample-run'
