@@ -26,6 +26,10 @@ hidden2_size=128,\
 output_size=config.n_classes,\
 time_reduce=1)"
 
+model_constructor = "ESC50CNN(n_mels=128, n_steps=431, output_size=config.n_classes)"
+
+model_constructor = "ResNet50(num_classes=config.n_classes)"
+
 # ###TRAINING
 # ratio to split off from training data
 val_size = .2  # could be changed
