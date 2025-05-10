@@ -122,7 +122,8 @@ def fit_classifier():
         # advance the optimization scheduler
         scheduler.step()
     # save full model
-    torch.save(model.state_dict(), os.path.join(experiment, 'terminal.pt'))
+    # torch.save(model.state_dict(), os.path.join(experiment, 'terminal.pt')) #audiomlp
+    torch.save(model.state_dict(), os.path.join(experiment, 'esc50cnn_weights.pt')) # esc50cnn
 
 
 # build model from configuration.
