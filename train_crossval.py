@@ -139,8 +139,8 @@ def build_model(model_name, config):
             hidden1_size=512, hidden2_size=256,
             output_size=config.n_classes
         )
-    elif model_name == "ResNet50Custom":
-        return ResNet50Custom(num_classes=config.n_classes)
+    elif model_name == "ResNet50":
+        return ResNet50(num_classes=config.n_classes)
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
