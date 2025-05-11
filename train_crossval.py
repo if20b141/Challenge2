@@ -128,11 +128,21 @@ def fit_classifier():
 
 # build model from configuration.
 def make_model():
-    n = config.n_classes
-    model_constructor = config.model_constructor
-    print(model_constructor)
-    model = eval(model_constructor)
-    return model
+    return build_model(config.model_name, config)
+
+def build_model(model_name, config):
+    if model_name == "ESC50CNN":
+        return ESC50CNN(n_mels=128, n_steps=431, output_size=config.n_classes)
+    elif model_name == "AudioMLP":
+        return AudioMLP(
+            n_steps=431, n_mels=128,
+            hidden1_size=512, hidden2_size=256,
+            output_size=config.n_classes
+        )
+    elif model_name == "ResNet50Custom":
+        return ResNet50Custom(num_classes=config.n_classes)
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
 
 
 if __name__ == "__main__":
