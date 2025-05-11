@@ -103,12 +103,12 @@ class Bottleneck(nn.Module):
 
 
 class ResNet50(nn.Module):
-    def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=50):
+    def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=50, dropout=0.3):
         super().__init__()
-
         self.in_channels = 64
 
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)  # 1-Kanal statt 3
+        # ⬇️ Verbesserte conv1 für Spectrogramme
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
 
@@ -120,6 +120,7 @@ class ResNet50(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(p=dropout)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, out_channels, blocks, stride=1):
@@ -141,18 +142,19 @@ class ResNet50(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # Input: (B, 1, 128, 431)
-        x = self.conv1(x)       # -> (B, 64, 64, 216)
+        # Input: (B, 1, 128, ~431)
+        x = self.conv1(x)       # -> (B, 64, 128, ~431)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)     # -> (B, 64, 32, 108)
+        x = self.maxpool(x)     # -> (B, 64, 64, ~216)
 
-        x = self.layer1(x)      # -> (B, 256, 32, 108)
-        x = self.layer2(x)      # -> (B, 512, 16, 54)
-        x = self.layer3(x)      # -> (B, 1024, 8, 27)
-        x = self.layer4(x)      # -> (B, 2048, 4, 14)
+        x = self.layer1(x)      # -> (B, 256, 64, ~216)
+        x = self.layer2(x)      # -> (B, 512, 32, ~108)
+        x = self.layer3(x)      # -> (B, 1024, 16, ~54)
+        x = self.layer4(x)      # -> (B, 2048, 8, ~27)
 
         x = self.avgpool(x)     # -> (B, 2048, 1, 1)
         x = torch.flatten(x, 1) # -> (B, 2048)
+        x = self.dropout(x)
         x = self.fc(x)          # -> (B, 50)
         return x
