@@ -19,11 +19,7 @@ n_mels = 128
 hop_length = 512
 #n_mfcc = 42
 
-# model_constructor = "AudioMLP(n_steps=431,\ n_mels=config.n_mels,\ hidden1_size=512,\ hidden2_size=128,\ output_size=config.n_classes,\ time_reduce=1)"
-
-model_constructor = "ESC50CNN(n_mels=128, n_steps=431, output_size=config.n_classes)"
-
-# model_constructor = "ResNet50(num_classes=config.n_classes)"
+model_name = "ESC50CNN"  # oder "AudioMLP", "ResNet50"
 
 # ###TRAINING
 # ratio to split off from training data
