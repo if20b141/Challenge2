@@ -19,7 +19,7 @@ n_mels = 128
 hop_length = 512
 #n_mfcc = 42
 
-model_name = "ESC50CNN"  # oder "AudioMLP", "ResNet50"
+model_name =  "ResNet50" # "ESC50CNN" "AudioMLP", "ResNet50"
 
 # ###TRAINING
 # ratio to split off from training data
