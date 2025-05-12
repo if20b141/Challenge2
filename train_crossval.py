@@ -10,7 +10,7 @@ from tqdm import tqdm
 import sys
 from functools import partial
 
-from models.model_classifier import ResNet50
+from models.model_classifier import AudioResNet18
 from models.utils import EarlyStopping, Tee
 from dataset.dataset_ESC50 import ESC50
 import config
@@ -141,6 +141,8 @@ def build_model(model_name, config):
         )
     elif model_name == "ResNet50":
         return ResNet50(num_classes=config.n_classes)
+    elif model_name == "AudioResNet18":
+        return AudioResNet18(in_channels=1, num_classes=config.n_classes)
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
