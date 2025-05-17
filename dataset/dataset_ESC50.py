@@ -9,6 +9,8 @@ from functools import partial
 import numpy as np
 import librosa
 
+from .SpecAugment import SpecAugment
+
 import config
 from . import transforms
 
@@ -101,12 +103,10 @@ class ESC50(data.Dataset):
             )
 
             self.spec_transforms = transforms.Compose(
-                # to Tensor and prepend singleton dim
-                #lambda x: torch.Tensor(x).unsqueeze(0),
-                # lambda non-pickleable, problem on windows, replace with partial function
-                torch.Tensor,
-                partial(torch.unsqueeze, dim=0),
-            )
+    		torch.Tensor,
+    		partial(torch.unsqueeze, dim=0),
+    		SpecAugment(time_mask_param=30, freq_mask_param=13)  # neue Zeile
+		)
 
         else:
             # for testing transforms are applied deterministically to support reproducible scores

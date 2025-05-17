@@ -10,7 +10,7 @@ from tqdm import tqdm
 import sys
 from functools import partial
 
-from models.model_classifier import AudioResNet18
+from models.model_classifier import ResNet18
 from models.utils import EarlyStopping, Tee
 from dataset.dataset_ESC50 import ESC50
 import config
@@ -141,8 +141,20 @@ def build_model(model_name, config):
         )
     elif model_name == "ResNet50":
         return ResNet50(num_classes=config.n_classes)
-    elif model_name == "AudioResNet18":
-        return AudioResNet18(in_channels=1, num_classes=config.n_classes)
+    elif model_name == "ResNet18":
+        return ResNet18(in_channels=1, num_classes=config.n_classes)
+    elif model_name == "AudioHTSAT":
+        return AudioHTSAT(
+            n_mels=128,
+            n_frames=431,
+            patch_size=4,
+            embed_dim=128,
+            num_heads=4,
+            num_layers=4,
+            mlp_dim=256,
+            output_size=config.n_classes,
+            dropout=0.2
+        )
     else:
         raise ValueError(f"Unknown model name: {model_name}")
 
@@ -209,9 +221,8 @@ if __name__ == "__main__":
             # Define a loss function and optimizer
             criterion = nn.CrossEntropyLoss().to(device)
 
-            optimizer = torch.optim.SGD(model.parameters(),
+            optimizer = torch.optim.AdamW(model.parameters(),
                                         lr=config.lr,
-                                        momentum=0.9,
                                         weight_decay=config.weight_decay)
 
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
